@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"github.com/Noooste/akamai-sensor-checker/tools"
 	"github.com/Noooste/go-utils"
 	"github.com/fatih/color"
-	"gitlab.com/azuresolution/akamai/tools"
 	"math"
 	"reflect"
 	"regexp"
@@ -228,7 +228,7 @@ func sensorValue(information utils.OrderedMap) (ok bool, expected, actual string
 
 	v := split[3]
 
-	r := strconv.Itoa(24 ^ tools.Ab(strings.Join(split[4:], separator)))
+	r := strconv.Itoa(24 ^ tools.Ab([]byte(strings.Join(split[4:], separator))))
 
 	if v != r {
 		return false, v, r
@@ -306,7 +306,7 @@ func userAgentHash(information utils.OrderedMap) (ok bool, expected, actual stri
 		return false, "hash", err.Error()
 	}
 
-	value := tools.Ab(ua)
+	value := tools.Ab([]byte(ua))
 	if value != hash {
 		return false, strconv.Itoa(value), strconv.Itoa(hash)
 	}
@@ -656,7 +656,7 @@ func fpValStrCalculated(information utils.OrderedMap) (ok bool, expected, actual
 		return false, "true", "false"
 	}
 
-	hash := tools.Ab(inf.(string))
+	hash := tools.Ab([]byte(inf.(string)))
 
 	hashFound, ok := information.Map["-80"]
 
@@ -712,7 +712,7 @@ func abckHash(information utils.OrderedMap) (ok bool, expected, actual string) {
 		return
 	}
 
-	hash := tools.Ab(abck)
+	hash := tools.Ab([]byte(abck))
 
 	inf, ok := information.Map["-115"]
 	if !ok {
