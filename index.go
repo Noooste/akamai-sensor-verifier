@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Noooste/go-utils"
 	"github.com/fatih/color"
 	"github.com/mattn/go-tty"
-	"gitlab.com/azureaio/utils"
 	"golang.org/x/crypto/ssh/terminal"
 	"regexp"
 	"strconv"

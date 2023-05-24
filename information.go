@@ -3,9 +3,9 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/Noooste/go-utils"
 	"github.com/fatih/color"
 	"github.com/leekchan/accounting"
-	"gitlab.com/azureaio/utils"
 	"math"
 	"strconv"
 	"strings"
