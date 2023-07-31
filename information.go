@@ -881,7 +881,11 @@ func langLen(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	var split []string
 	split = strings.Split(information.Map["-131"].(string), ",")
-	buf.WriteString(split[4])
+	if len(split) > 4 {
+		buf.WriteString(split[4])
+		return
+	}
+	buf.WriteString("<unknown>")
 	return
 }
 
@@ -889,6 +893,10 @@ func langHash(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	var split []string
 	split = strings.Split(information.Map["-129"].(string), ",")
-	buf.WriteString(split[2])
+	if len(split) > 2 {
+		buf.WriteString(split[2])
+		return
+	}
+	buf.WriteString("<unknown>")
 	return
 }
