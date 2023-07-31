@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	github.com/Noooste/fhttp v1.0.7 // indirect
+	github.com/Noooste/fhttp v1.0.6 // indirect
 	github.com/Noooste/utls v1.1.2 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect

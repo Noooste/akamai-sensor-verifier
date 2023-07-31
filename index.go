@@ -6,7 +6,9 @@ import (
 	"github.com/Noooste/go-utils"
 	"github.com/fatih/color"
 	"github.com/mattn/go-tty"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,7 +17,12 @@ import (
 var terminalWidth int
 
 func init() {
-	terminalWidth, _, _ = terminal.GetSize(0)
+	var err error
+	terminalWidth, _, err = terminal.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		log.Println("Error getting terminal size:", err)
+		return
+	}
 }
 
 func main() {
