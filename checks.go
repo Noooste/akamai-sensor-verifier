@@ -1394,8 +1394,8 @@ func webdriverCheck(information utils.OrderedMap) (ok bool, expected, actual str
 			return false, "0", split[28]
 		}
 
-		if split[29] != "-1" {
-			return false, "-1", split[29]
+		if split[29] != "0" {
+			return false, "0", split[29]
 		}
 
 		if split[30] != "0" {

@@ -33,12 +33,21 @@ var AllInformation = []any{
 	"sensor_content",
 	[]any{
 		url,
-		"device",
+		"browser",
 		[]any{
 			userAgent,
-			rcfp,
-			rValue,
-			fpValStr,
+			doNotTrack,
+			"webgl",
+			[]any{
+				webglVendor,
+				webglRenderer,
+			},
+			"canvas",
+			[]any{
+				rcfp,
+				rValue,
+				fpValStr,
+			},
 			"screen",
 			[]any{
 				screenWidth,
@@ -79,6 +88,18 @@ var AllInformation = []any{
 				[]any{
 					dtMact,
 					dtMactList,
+				},
+				"acceleration",
+				[]any{
+					accelerationMact,
+				},
+			},
+			"kact",
+			[]any{
+				"delta_time",
+				[]any{
+					dtKact,
+					dtKactList,
 				},
 			},
 			"tact",
@@ -320,6 +341,59 @@ func dtMactList(information utils.OrderedMap) (buf *bytes.Buffer) {
 
 	buf.Truncate(buf.Len() - 2)
 
+	return
+}
+
+func accelerationMact(information utils.OrderedMap) (buf *bytes.Buffer) {
+	buf = new(bytes.Buffer)
+	_, _, _, split := splitMouseData(information) //ts is in millisecond
+
+	if len(split) == 0 {
+		buf.WriteString("no mouse movement")
+		return
+	}
+
+	w := information.Map["x-available-width"].(int)
+	indent := information.Map["x-add-indent"].(int)
+	tab := information.Map["x-tab"].(string)
+
+	currentWidthLeft := w - indent - len(tab) - 8
+
+	for i := 0; i < len(split)-2; i++ {
+		p1, p2, p3 := strings.Split(split[i], ","), strings.Split(split[i+1], ","), strings.Split(split[i+2], ",")
+
+		var (
+			x1, _ = strconv.Atoi(p1[3])
+			y1, _ = strconv.Atoi(p1[4])
+			t1, _ = strconv.Atoi(p1[2])
+			x2, _ = strconv.Atoi(p2[3])
+			y2, _ = strconv.Atoi(p2[4])
+			t2, _ = strconv.Atoi(p2[2])
+			x3, _ = strconv.Atoi(p3[3])
+			y3, _ = strconv.Atoi(p3[4])
+			t3, _ = strconv.Atoi(p3[2])
+		)
+
+		v1 := math.Sqrt(math.Pow(float64(x2-x1), 2)+math.Pow(float64(y2-y1), 2)) / float64(t2-t1)
+		v2 := math.Sqrt(math.Pow(float64(x3-x2), 2)+math.Pow(float64(y3-y2), 2)) / float64(t3-t2)
+
+		acceleration := (v2 - v1) / float64(t3-t1)
+		inf := strconv.FormatFloat(acceleration, 'f', 2, 64) + ", "
+		if len(inf) > currentWidthLeft {
+			buf.WriteString("\n")
+			buf.WriteString(tab)
+			buf.WriteString(strings.Repeat(" ", indent))
+			currentWidthLeft = w
+		}
+
+		buf.WriteString(inf)
+	}
+
+	if buf.Len() > 2 {
+		buf.Truncate(buf.Len() - 2)
+	} else {
+		buf.WriteString("no acceleration")
+	}
 	return
 }
 
@@ -671,6 +745,106 @@ func dtdPosCntTactList(information utils.OrderedMap) (buf *bytes.Buffer) {
 	return
 }
 
+func dtKact(information utils.OrderedMap) (buf *bytes.Buffer) {
+	buf = new(bytes.Buffer)
+	_, _, _, split := splitKeyboardData(information) //ts is in millisecond
+
+	if len(split) == 0 {
+		buf.WriteString("no keyboard activity")
+		return
+	}
+
+	var averageDt int
+	var nbDt int
+	var minDt, maxDt int
+
+	lastT := 0
+
+	for i := 0; i < len(split); i++ {
+		s := strings.Split(split[i], ",")
+		t, _ := strconv.Atoi(s[2])
+
+		dt := t - lastT
+		lastT = t
+
+		if dt < 1000 && dt > 0 {
+			averageDt += dt
+			nbDt++
+		}
+
+		if minDt == 0 || (dt > 0 && dt < minDt) {
+			minDt = dt
+		}
+
+		if dt < 30 && dt > maxDt {
+			maxDt = dt
+		}
+
+	}
+
+	if nbDt > 0 {
+		averageDt = averageDt / nbDt
+	}
+
+	buf.WriteString(fmt.Sprintf("average: %d ms, min: %d ms, max: %d ms", averageDt, minDt, maxDt))
+	return
+}
+
+func dtKactList(information utils.OrderedMap) (buf *bytes.Buffer) {
+	buf = new(bytes.Buffer)
+	_, _, _, split := splitKeyboardData(information) //ts is in millisecond
+
+	if len(split) == 0 {
+		buf.WriteString("no keyboard activity")
+		return
+	}
+
+	lastT := 0
+
+	w := information.Map["x-available-width"].(int)
+	indent := information.Map["x-add-indent"].(int)
+	tab := information.Map["x-tab"].(string)
+
+	currentWidthLeft := w - indent - len(tab) - 8
+
+	//inform about the color code
+	buf.WriteString(color.WhiteString(""))
+	buf.WriteString("what's type : \033[36mkeydown\u001B[0m, keypress, \033[33mkeyup\033[0m | ")
+	for i := 0; i < len(split); i++ {
+		s := strings.Split(split[i], ",")
+		t, _ := strconv.Atoi(s[2])
+
+		dt := t - lastT
+		lastT = t
+
+		var inf string
+		switch s[1][0] {
+		case '1':
+			inf = fmt.Sprintf("\u001B[36m%d\u001B[0m, ", dt)
+		case '2':
+			inf = fmt.Sprintf("\033[33m%d\033[0m, ", dt)
+		case '3':
+			inf = fmt.Sprintf("%d, ", dt)
+		default:
+			continue
+		}
+
+		lengthWithoutColors := len(fmt.Sprintf("%d, ", dt))
+		if lengthWithoutColors > currentWidthLeft {
+			buf.WriteString("\n")
+			buf.WriteString(tab)
+			buf.WriteString(strings.Repeat(" ", indent))
+			currentWidthLeft = w
+		}
+
+		buf.WriteString(inf)
+	}
+
+	buf.Truncate(buf.Len() - 2)
+
+	return
+}
+
 func sensorSeparator(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	separator := strings.Split(string(information.Map["raw"].([]uint8))[1:], ",2,")[0] + ","
@@ -898,5 +1072,40 @@ func langHash(information utils.OrderedMap) (buf *bytes.Buffer) {
 		return
 	}
 	buf.WriteString("<unknown>")
+	return
+}
+
+func webglVendor(information utils.OrderedMap) (buf *bytes.Buffer) {
+	buf = new(bytes.Buffer)
+	first := strings.Split(information.Map["-129"].(string), ";wl3")[0]
+	second := strings.Split(first, ",")
+
+	if len(second) > 1 {
+		buf.WriteString(second[len(second)-1])
+		return
+	}
+
+	buf.WriteString("<unknown>")
+	return
+}
+
+func webglRenderer(information utils.OrderedMap) (buf *bytes.Buffer) {
+	buf = new(bytes.Buffer)
+	first := strings.Split(information.Map["-129"].(string), ";wl4")[0]
+	second := strings.Split(first, ",ANGLE (")
+
+	if len(second) > 1 {
+		buf.WriteString("ANGLE (" + second[1])
+		return
+	}
+
+	buf.WriteString("<unknown>")
+	return
+}
+
+func doNotTrack(information utils.OrderedMap) (buf *bytes.Buffer) {
+	buf = new(bytes.Buffer)
+	split := strings.Split(information.Map["-70"].(string), ";")
+	buf.WriteString(split[len(split)-1])
 	return
 }

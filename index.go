@@ -47,10 +47,13 @@ func main() {
 	fmt.Println(strings.Repeat("─", terminalWidth))
 
 	r := decryptMain(payload)
+
 	sensorData := r.Map["raw"].([]uint8)
+
 	separator := strings.Split(string(sensorData[1:]), ",2,")[0] + ","
 
 	split := strings.Split(string(sensorData), separator)[2:]
+
 	fmt.Println("sensor_data :")
 	fmt.Println("[")
 	for i := 0; i < len(split); i++ {
@@ -76,7 +79,9 @@ func decryptMain(payload string) (result utils.OrderedMap) {
 
 	var sensor sensorDataStruct
 	// parse json
-	json.Unmarshal([]byte(payload), &sensor)
+	if err := json.Unmarshal([]byte(payload), &sensor); err != nil {
+		log.Fatal(err)
+	}
 
 	// extract keys
 	keys := strings.Split(sensor.SensorData, ";")
