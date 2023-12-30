@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+type funcRename string
+
 var AllInformation = []any{
 	"sensor_format",
 	[]any{
@@ -68,6 +70,11 @@ var AllInformation = []any{
 				JSHeapUsed,
 			},
 		},
+		"-133",
+		[]any{
+			funcRename("window.Object.getOwnPropertyDescriptors"),
+			windowObjectProp,
+		},
 		"locale",
 		[]any{
 			timezoneOffset,
@@ -84,47 +91,36 @@ var AllInformation = []any{
 		[]any{
 			"mact",
 			[]any{
-				"delta_time",
-				[]any{
-					dtMact,
-					dtMactList,
-				},
-				"acceleration",
-				[]any{
-					accelerationMact,
-				},
+				funcRename("dt_information"),
+				dtMact,
+				funcRename("dt_list"),
+				dtMactList,
+				funcRename("acceleration"),
+				mouseMovementAcceleration,
+				funcRename("velocity"),
+				mouseMovementVelocity,
 			},
 			"kact",
 			[]any{
-				"delta_time",
-				[]any{
-					dtKact,
-					dtKactList,
-				},
+				funcRename("dt_information"),
+				dtKact,
+				funcRename("dt_list"),
+				dtKactList,
 			},
 			"tact",
 			[]any{
-				"delta_time",
-				[]any{
-					dtTact,
-					dtTactList,
-				},
-				"delta_position",
-				[]any{
-					dPosTactList,
-				},
-				"delta_time_delta_position",
-				[]any{
-					dtdPosTactList,
-				},
-				"velocity",
-				[]any{
-					tactVelocity,
-				},
-				"ratio counter movement",
-				[]any{
-					dtdPosCntTactList,
-				},
+				funcRename("dt_information"),
+				dtTact,
+				funcRename("dt_list"),
+				dtTactList,
+				funcRename("d_pos_list"),
+				dPosTactList,
+				funcRename("dt_delta_position"),
+				dtdPosTactList,
+				funcRename("velocity"),
+				tactVelocity,
+				funcRename("ratio counter movement"),
+				dtdPosCntTactList,
 			},
 		},
 	},
@@ -146,7 +142,7 @@ func getTerminalSize() (width int, height int) {
 	height = 100
 	return
 }
-func displaySpecificInformation(information utils.OrderedMap, last bool, tab string, fn func(om utils.OrderedMap) (buf *bytes.Buffer)) (buf *bytes.Buffer) {
+func displaySpecificInformation(information utils.OrderedMap, last bool, tab string, fn func(om utils.OrderedMap) (buf *bytes.Buffer), fnName string) (buf *bytes.Buffer) {
 	// Call the provided function and get the output buffer
 
 	buf = new(bytes.Buffer)
@@ -160,23 +156,36 @@ func displaySpecificInformation(information utils.OrderedMap, last bool, tab str
 	}
 
 	// Add function name and set the color
-	fnName := GetFunctionName(fn)
+	if fnName == "" {
+		fnName = GetFunctionName(fn)
+	}
 
 	addLen := len(fnName) + len(": ")
 	avail := terminalWidth - len(tab) - addLen
 
-	buf.WriteString(fnName + ": \u001B[36m")
 	information.Map["x-add-indent"] = addLen
 	information.Map["x-available-width"] = avail
-	information.Map["x-tab"] = tab
+
+	if !last {
+		information.Map["x-tab"] = tab + "│  "
+	} else {
+		information.Map["x-tab"] = tab
+	}
 
 	b := fn(information)
 
+	buf.WriteString(fnName + ": \u001B[36m")
 	buf.WriteString(b.String())
 	buf.WriteString("\n")
 
 	// Reset color and return buffer
 	buf.WriteString("\u001B[0m")
+
+	if b.Len() > avail {
+		buf.WriteString(information.Map["x-tab"].(string))
+		buf.WriteString("\n")
+	}
+
 	return
 }
 
@@ -186,9 +195,18 @@ func display(om utils.OrderedMap, list []any, tab string) (buf *bytes.Buffer) {
 	for i := 0; i < listLength; i++ {
 		k := list[i]
 
+		fnName := ""
+
+		if i > 0 {
+			switch list[i-1].(type) {
+			case funcRename:
+				fnName = string(list[i-1].(funcRename))
+			}
+		}
+
 		switch k.(type) {
 		case func(utils.OrderedMap) (buf *bytes.Buffer):
-			buf.WriteString(displaySpecificInformation(om, i == listLength-1, tab, k.(func(utils.OrderedMap) (buf *bytes.Buffer))).String())
+			buf.WriteString(displaySpecificInformation(om, i == listLength-1, tab, k.(func(utils.OrderedMap) (buf *bytes.Buffer)), fnName).String())
 
 		case string:
 			var addTab string
@@ -298,15 +316,18 @@ func dtMactList(information utils.OrderedMap) (buf *bytes.Buffer) {
 
 	lastT := 0
 
-	w := information.Map["x-available-width"].(int)
+	w := information.Map["x-available-width"].(int) - 3
 	indent := information.Map["x-add-indent"].(int)
 	tab := information.Map["x-tab"].(string)
 
-	currentWidthLeft := w - indent - len(tab) - 8
-
 	//inform about the color code
 	buf.WriteString(color.WhiteString(""))
-	buf.WriteString("what's type : move, \u001B[32mclick\u001B[0m, \033[36mdown\u001B[0m, \033[33mup\033[0m | ")
+	buf.WriteString("mouse event colors -> move, \u001B[32mclick\u001B[0m, \033[36mmousedown\u001B[0m, \033[33mmouseup\033[0m, \033[90munknown\033[0m")
+	buf.WriteString("\n")
+	buf.WriteString(tab)
+	buf.WriteString(strings.Repeat(" ", indent))
+
+	currentWidthLeft := w
 	for i := 0; i < len(split); i++ {
 		s := strings.Split(split[i], ",")
 		t, _ := strconv.Atoi(s[2])
@@ -325,7 +346,7 @@ func dtMactList(information utils.OrderedMap) (buf *bytes.Buffer) {
 		case '4':
 			inf = fmt.Sprintf("\033[33m%d\033[0m, ", dt)
 		default:
-			inf = fmt.Sprintf("%d, ", dt)
+			inf = fmt.Sprintf("\033[90m%d\u001B[0m, ", dt)
 		}
 
 		lengthWithoutColors := len(fmt.Sprintf("%d, ", dt))
@@ -336,6 +357,7 @@ func dtMactList(information utils.OrderedMap) (buf *bytes.Buffer) {
 			currentWidthLeft = w
 		}
 
+		currentWidthLeft -= lengthWithoutColors
 		buf.WriteString(inf)
 	}
 
@@ -344,7 +366,7 @@ func dtMactList(information utils.OrderedMap) (buf *bytes.Buffer) {
 	return
 }
 
-func accelerationMact(information utils.OrderedMap) (buf *bytes.Buffer) {
+func mouseMovementAcceleration(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	_, _, _, split := splitMouseData(information) //ts is in millisecond
 
@@ -353,11 +375,11 @@ func accelerationMact(information utils.OrderedMap) (buf *bytes.Buffer) {
 		return
 	}
 
-	w := information.Map["x-available-width"].(int)
+	w := information.Map["x-available-width"].(int) - 3
 	indent := information.Map["x-add-indent"].(int)
 	tab := information.Map["x-tab"].(string)
 
-	currentWidthLeft := w - indent - len(tab) - 8
+	currentWidthLeft := w
 
 	for i := 0; i < len(split)-2; i++ {
 		p1, p2, p3 := strings.Split(split[i], ","), strings.Split(split[i+1], ","), strings.Split(split[i+2], ",")
@@ -378,15 +400,85 @@ func accelerationMact(information utils.OrderedMap) (buf *bytes.Buffer) {
 		v2 := math.Sqrt(math.Pow(float64(x3-x2), 2)+math.Pow(float64(y3-y2), 2)) / float64(t3-t2)
 
 		acceleration := (v2 - v1) / float64(t3-t1)
-		inf := strconv.FormatFloat(acceleration, 'f', 2, 64) + ", "
+		inf := strconv.FormatFloat(acceleration, 'f', 2, 64)
+		if i < len(split)-3 {
+			inf += ", "
+		}
 		if len(inf) > currentWidthLeft {
 			buf.WriteString("\n")
-			buf.WriteString(tab)
+			buf.WriteString(color.HiWhiteString(tab))
 			buf.WriteString(strings.Repeat(" ", indent))
 			currentWidthLeft = w
 		}
 
-		buf.WriteString(inf)
+		currentWidthLeft -= len(inf)
+		buf.WriteString(fmt.Sprintf("\033[36m%s\u001B[0m", inf))
+	}
+
+	if buf.Len() > 2 {
+		buf.Truncate(buf.Len() - 2)
+	} else {
+		buf.WriteString("no acceleration")
+	}
+	return
+}
+
+func mouseMovementVelocity(information utils.OrderedMap) (buf *bytes.Buffer) {
+	buf = new(bytes.Buffer)
+	_, _, _, split := splitMouseData(information) //ts is in millisecond
+
+	if len(split) == 0 {
+		buf.WriteString("no mouse movement")
+		return
+	}
+
+	w := information.Map["x-available-width"].(int) - 3
+	indent := information.Map["x-add-indent"].(int)
+	tab := information.Map["x-tab"].(string)
+
+	currentWidthLeft := w
+
+	for i := 0; i < len(split)-1; i++ {
+		p1, p2 := strings.Split(split[i], ","), strings.Split(split[i+1], ",")
+
+		var (
+			x1, _ = strconv.Atoi(p1[3])
+			y1, _ = strconv.Atoi(p1[4])
+			t1, _ = strconv.Atoi(p1[2])
+			x2, _ = strconv.Atoi(p2[3])
+			y2, _ = strconv.Atoi(p2[4])
+			t2, _ = strconv.Atoi(p2[2])
+		)
+
+		// Calculate the distance between point 1 and point 2
+		distance := math.Sqrt(math.Pow(float64(x2-x1), 2) + math.Pow(float64(y2-y1), 2))
+
+		// Calculate the time difference
+		timeDiff := float64(t2 - t1)
+
+		// Calculate velocity
+		// Make sure to handle the case where timeDiff is 0 to avoid division by zero
+		var vel float64
+		if timeDiff != 0 {
+			vel = distance / timeDiff
+		} else {
+			vel = 0
+		}
+
+		// Format and write the velocity value
+		inf := strconv.FormatFloat(vel, 'f', 2, 64)
+		if i < len(split)-2 {
+			inf += ", "
+		}
+		if len(inf) > currentWidthLeft {
+			buf.WriteString("\n")
+			buf.WriteString(color.HiWhiteString(tab))
+			buf.WriteString(strings.Repeat(" ", indent))
+			currentWidthLeft = w
+		}
+
+		currentWidthLeft -= len(inf)
+		buf.WriteString(fmt.Sprintf("\033[36m%s\u001B[0m", inf))
 	}
 
 	if buf.Len() > 2 {
@@ -1024,6 +1116,16 @@ func JSHeapUsed(information utils.OrderedMap) (buf *bytes.Buffer) {
 	return
 }
 
+func windowObjectProp(information utils.OrderedMap) (buf *bytes.Buffer) {
+	buf = new(bytes.Buffer)
+	field := information.Map["-133"].(string)
+	if field == "" {
+		buf.WriteString("\033[90m<nothing>\033[0m")
+	} else {
+		buf.WriteString(field)
+	}
+	return buf
+}
 func timezoneOffset(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	var split []string

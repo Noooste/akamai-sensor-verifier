@@ -34,9 +34,45 @@ func Ab(t []byte) int {
 	return a
 }
 
+func rir(a, b, c, d int) int {
+	if a > 47 && a <= 57 {
+		a += d % (c - b)
+		if a > c {
+			a = a - c + b
+		}
+	}
+	return a
+}
+
+func Od(a, t string) string {
+	var e []string
+	n := len(t)
+	if n > 0 {
+		e = make([]string, len(a))
+		for o, v := range a {
+			r := string(v)
+			i := t[o%n]
+
+			vInt := int(v)
+			m := rir(vInt, 47, 57, int(i))
+			if m != vInt {
+				r = string(rune(m))
+			}
+
+			e[o] = r
+		}
+
+		if len(e) > 0 {
+			return strings.Join(e, "")
+		}
+	}
+	return a
+}
+
 var AllChecks = []any{
 	sensorValue,
 	KeyOrder,
+	sensorId,
 	"-100",
 	[]any{
 		deviceDataLength,
@@ -248,6 +284,52 @@ func sensorValue(information utils.OrderedMap) (ok bool, expected, actual string
 }
 
 var keyOrder = []string{"-100", "-105", "-108", "-101", "-110", "-117", "-109", "-102", "-111", "-114", "-103", "-106", "-115", "-112", "-119", "-122", "-123", "-124", "-126", "-127", "-128", "-131", "-132", "-133", "-70", "-80", "-90", "-116", "-129"}
+
+const (
+	f = "7a74G7m23Vrp0o5c"
+)
+
+func getSensorId(t int) string {
+	return f + Od(strconv.Itoa(t/36e5), f)
+}
+
+func sensorId(information utils.OrderedMap) (ok bool, expected, actual string) {
+	scriptId, ok := information.Map["sensor_data"]
+
+	if !ok {
+		return false, "script_id", "no field sensor_data found in map (maybe parsing error)"
+	}
+
+	v := scriptId.([]string)[0]
+
+	var ts int
+	ok, expected, actual, ts = getStartTs(information) //ts is in millisecond
+
+	if !ok {
+		return false, "script_id", "can't find start time from -115 values"
+	}
+
+	var split []string
+	_, _, _, split = splitPizte(information)
+
+	if len(split) < 18 {
+		return false, "script_id", "can't find delta time from -115 values"
+	}
+
+	dt2, err := strconv.Atoi(split[17])
+
+	if err != nil {
+		return false, "script_id", "atoi: can't parse delta time from -115 values"
+	}
+
+	var sid = v[len(v)-24:]
+
+	if got := getSensorId(ts + dt2); got+sid != v {
+		return false, got + sid, v
+	}
+
+	return true, "", ""
+}
 
 func KeyOrder(information utils.OrderedMap) (ok bool, expected, actual string) {
 	keys := information.Order[4:]

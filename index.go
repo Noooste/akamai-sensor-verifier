@@ -54,6 +54,8 @@ func main() {
 
 	split := strings.Split(string(sensorData), separator)[2:]
 
+	r.Map["sensor_data"] = split
+
 	fmt.Println("sensor_data :")
 	fmt.Println("[")
 	for i := 0; i < len(split); i++ {
