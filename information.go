@@ -15,6 +15,7 @@ import (
 type funcRename string
 
 var AllInformation = []any{
+	scriptId,
 	"sensor_format",
 	[]any{
 		sensorSeparator,
@@ -137,11 +138,6 @@ func DisplayInformation(information utils.OrderedMap) {
 
 }
 
-func getTerminalSize() (width int, height int) {
-	width = 100
-	height = 100
-	return
-}
 func displaySpecificInformation(information utils.OrderedMap, last bool, tab string, fn func(om utils.OrderedMap) (buf *bytes.Buffer), fnName string) (buf *bytes.Buffer) {
 	// Call the provided function and get the output buffer
 
@@ -236,6 +232,14 @@ func display(om utils.OrderedMap, list []any, tab string) (buf *bytes.Buffer) {
 		}
 	}
 
+	return
+}
+
+func scriptId(information utils.OrderedMap) (buf *bytes.Buffer) {
+	buf = new(bytes.Buffer)
+	sid, _ := information.Map["sensor_data"]
+	v := sid.([]string)[0]
+	buf.WriteString(v[len(v)-24:])
 	return
 }
 
