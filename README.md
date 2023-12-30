@@ -1,6 +1,6 @@
 # Akamai Sensor Verifier
 
-This project aims verify your sensor data sent to akamai.
+The purpose of this project is to verify the sensor data sent to Akamai.
 
 ## BUILD AND RUN
 1. Install Golang on https://go.dev/doc/install
