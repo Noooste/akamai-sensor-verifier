@@ -370,7 +370,7 @@ func dtMactList(information utils.OrderedMap) (buf *bytes.Buffer) {
 	return
 }
 
-func mouseMovementEculideanDistance(information utils.OrderedMap) (buf *bytes.Buffer) {
+func mouseMovementEuclideanDistance(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	_, _, _, split := splitMouseData(information) //ts is in millisecond
 
