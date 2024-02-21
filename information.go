@@ -370,6 +370,59 @@ func dtMactList(information utils.OrderedMap) (buf *bytes.Buffer) {
 	return
 }
 
+func mouseMovementEculideanDistance(information utils.OrderedMap) (buf *bytes.Buffer) {
+	buf = new(bytes.Buffer)
+	_, _, _, split := splitMouseData(information) //ts is in millisecond
+
+	if len(split) == 0 {
+		buf.WriteString("no mouse movement")
+		return
+	}
+
+	w := information.Map["x-available-width"].(int) - 3
+	indent := information.Map["x-add-indent"].(int)
+	tab := information.Map["x-tab"].(string)
+
+	currentWidthLeft := w
+
+	for i := 0; i < len(split)-1; i++ {
+		p1, p2 := strings.Split(split[i], ","), strings.Split(split[i+1], ",")
+
+		var (
+			x1, _ = strconv.Atoi(p1[3])
+			y1, _ = strconv.Atoi(p1[4])
+			x2, _ = strconv.Atoi(p2[3])
+			y2, _ = strconv.Atoi(p2[4])
+		)
+
+		// Calculate the distance between point 1 and point 2
+		distance := math.Sqrt(math.Pow(float64(x2-x1), 2) + math.Pow(float64(y2-y1), 2))
+
+		// Format and write the distance value
+		inf := strconv.FormatFloat(distance, 'f', 2, 64)
+		if i < len(split)-2 {
+			inf += ", "
+		}
+		if len(inf) > currentWidthLeft {
+			buf.WriteString("\n")
+			buf.WriteString(color.HiWhiteString(tab))
+			buf.WriteString(strings.Repeat(" ", indent))
+			currentWidthLeft = w
+		}
+
+		currentWidthLeft -= len(inf)
+		buf.WriteString(fmt.Sprintf("\033[36m%s\u001B[0m", inf))
+	}
+
+	if buf.Len() > 2 {
+		buf.Truncate(buf.Len() - 2)
+	} else {
+		buf.WriteString("no acceleration")
+	}
+	return
+
+}
+
 func mouseMovementAcceleration(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	_, _, _, split := splitMouseData(information) //ts is in millisecond
