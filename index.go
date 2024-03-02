@@ -87,14 +87,14 @@ func decryptMain(payload string) (result utils.OrderedMap) {
 
 	// extract keys
 	keys := strings.Split(sensor.SensorData, ";")
-	key1, _ = strconv.Atoi(keys[1])
-	key2, _ = strconv.Atoi(keys[2])
+	key1, _ = strconv.Atoi(keys[2])
+	key2, _ = strconv.Atoi(keys[3])
 
 	// Parse prefix
 	sensorData = []byte(sensor.SensorData)
 	encrypted := sensorData
 
-	re := regexp.MustCompile(`(\d+;\d+;\d+;[\d,]+;)`)
+	re := regexp.MustCompile(`(\d+;\d+;\d+;\d+;[\d,]+;)`)
 	if re.Match(sensorData) {
 		prefix = re.Find(sensorData)
 		sensorData = sensorData[len(prefix):]

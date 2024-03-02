@@ -727,19 +727,20 @@ func FileReader(information utils.OrderedMap) (ok bool, expected, actual string)
 }
 
 func FpValStrLength(information utils.OrderedMap) (ok bool, expected, actual string) {
-	var split []string
+	//var split []string
 	inf, ok := information.Map["-70"]
 	if !ok {
 		return false, "true", "false"
 	}
 
-	split = strings.Split(inf.(string), ";")
+	/*
+		split = strings.Split(inf.(string), ";")
 
-	if len(split) != 14 {
-		return false, "14", strconv.Itoa(len(split))
-	}
-
-	return true, "", ""
+		if len(split) != 14 {
+			return false, "14", strconv.Itoa(len(split))
+		}
+	*/
+	return inf == "-1", "-1", inf.(string)
 }
 
 func fpValStrCalculated(information utils.OrderedMap) (ok bool, expected, actual string) {

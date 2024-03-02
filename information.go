@@ -78,7 +78,7 @@ var AllInformation = []any{
 		},
 		"locale",
 		[]any{
-			timezoneOffset,
+			//timezoneOffset,
 			lang,
 			langLen,
 			langHash,
@@ -1011,7 +1011,7 @@ func encryptionKey(information utils.OrderedMap) (buf *bytes.Buffer) {
 func encryptionTime(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	keys := strings.Split(string(information.Map["encrypted"].([]uint8)), ";")
-	buf.WriteString(strings.Split(keys[3], ",")[4])
+	buf.WriteString(strings.Split(keys[4], ",")[4])
 	return
 }
 
@@ -1025,7 +1025,7 @@ func shufflingKey(information utils.OrderedMap) (buf *bytes.Buffer) {
 func shufflingTime(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	keys := strings.Split(string(information.Map["encrypted"].([]uint8)), ";")
-	buf.WriteString(strings.Split(keys[3], ",")[3])
+	buf.WriteString(strings.Split(keys[4], ",")[3])
 	return
 }
 
@@ -1054,21 +1054,21 @@ func fpValStr(information utils.OrderedMap) (buf *bytes.Buffer) {
 func sensorIdTime(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	keys := strings.Split(string(information.Map["encrypted"].([]uint8)), ";")
-	buf.WriteString(strings.Split(keys[3], ",")[2])
+	buf.WriteString(strings.Split(keys[4], ",")[2])
 	return
 }
 
 func scriptInitTime(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	keys := strings.Split(string(information.Map["encrypted"].([]uint8)), ";")
-	buf.WriteString(strings.Split(keys[3], ",")[1])
+	buf.WriteString(strings.Split(keys[4], ",")[1])
 	return
 }
 
 func sensorBuildTime(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	keys := strings.Split(string(information.Map["encrypted"].([]uint8)), ";")
-	buf.WriteString(strings.Split(keys[3], ",")[0])
+	buf.WriteString(strings.Split(keys[4], ",")[0])
 	return
 }
 
@@ -1183,6 +1183,7 @@ func windowObjectProp(information utils.OrderedMap) (buf *bytes.Buffer) {
 	}
 	return buf
 }
+
 func timezoneOffset(information utils.OrderedMap) (buf *bytes.Buffer) {
 	buf = new(bytes.Buffer)
 	var split []string
