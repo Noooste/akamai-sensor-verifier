@@ -733,14 +733,13 @@ func FpValStrLength(information utils.OrderedMap) (ok bool, expected, actual str
 		return false, "true", "false"
 	}
 
-	/*
-		split = strings.Split(inf.(string), ";")
+	split := strings.Split(inf.(string), ";")
 
-		if len(split) != 14 {
-			return false, "14", strconv.Itoa(len(split))
-		}
-	*/
-	return inf == "-1", "-1", inf.(string)
+	if len(split) != 14 {
+		return false, "14", strconv.Itoa(len(split))
+	}
+
+	return inf != "-1", "-1", inf.(string)
 }
 
 func fpValStrCalculated(information utils.OrderedMap) (ok bool, expected, actual string) {
