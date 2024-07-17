@@ -123,10 +123,6 @@ var AllChecks = []any{
 		powLength,
 		powCheck,
 	},
-	"-70",
-	[]any{
-		FpValStrLength,
-	},
 	"-80",
 	[]any{
 		fpValStrCalculated,
@@ -724,22 +720,6 @@ func FileReader(information utils.OrderedMap) (ok bool, expected, actual string)
 	}
 
 	return true, "", ""
-}
-
-func FpValStrLength(information utils.OrderedMap) (ok bool, expected, actual string) {
-	//var split []string
-	inf, ok := information.Map["-70"]
-	if !ok {
-		return false, "true", "false"
-	}
-
-	split := strings.Split(inf.(string), ";")
-
-	if len(split) != 14 {
-		return false, "14", strconv.Itoa(len(split))
-	}
-
-	return inf != "-1", "-1", inf.(string)
 }
 
 func fpValStrCalculated(information utils.OrderedMap) (ok bool, expected, actual string) {

@@ -85,20 +85,20 @@ func decryptMain(payload string) (result utils.OrderedMap) {
 		log.Fatal(err)
 	}
 
-	// extract keys
-	keys := strings.Split(sensor.SensorData, ";")
-	key1, _ = strconv.Atoi(keys[1])
-	key2, _ = strconv.Atoi(keys[2])
-
 	// Parse prefix
 	sensorData = []byte(sensor.SensorData)
 	encrypted := sensorData
 
-	re := regexp.MustCompile(`(\d+;\d+;\d+;[\d,]+;)`)
+	re := regexp.MustCompile(`(\d+(;\d+)?;(\d+);(\d+);[\d,]+;)`)
 	if re.Match(sensorData) {
 		prefix = re.Find(sensorData)
 		sensorData = sensorData[len(prefix):]
 	}
+
+	groups := re.FindStringSubmatch(string(prefix))
+
+	key1, _ = strconv.Atoi(groups[3])
+	key2, _ = strconv.Atoi(groups[4])
 
 	// Obfuscated strings to plaintext
 	sensorData = []byte(decrypt(string(sensorData), uint32(key1)))
@@ -107,7 +107,6 @@ func decryptMain(payload string) (result utils.OrderedMap) {
 	raw := sensorData
 
 	separator = strings.Split(string(sensorData[1:]), ",2,")[0] + ","
-
 	split := strings.Split(string(sensorData), separator)[2:]
 
 	result.Order = make([]string, 4+len(split[2:])/2)
@@ -124,6 +123,9 @@ func decryptMain(payload string) (result utils.OrderedMap) {
 
 	result.Order[3] = "encrypted"
 	result.Map["encrypted"] = encrypted
+
+	result.Map["ev"] = groups[3]
+	result.Map["sv"] = groups[4]
 
 	orderIndex := 4
 	split = split[2:]
